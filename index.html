@@ -220,8 +220,11 @@
       }
     }
 
-    document.getElementById("form-carta").onsubmit = (evento) => {
-      evento.preventDefault();
+   
+      
+  </script> 
+  document.getElementById("form-carta").onsubmit = (evento) => {
+evento.preventDefault();
       const nome = nomeCarta.value.trim();
       const testo = prezzoCarta.value.trim().replace(",", ".");
       const centesimi = Math.round(Number(testo) * 100);
@@ -241,6 +244,5 @@
     // Aggiorna anche dopo un versamento o un ripristino del saldo.
     new MutationObserver(aggiornaObiettivo).observe(saldo, { childList: true });
     aggiornaObiettivo();
-  </script>
 </body>
 </html>
