@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="it">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poké Savings</title>
+<h1>Il mio salvadanaio Pokémon</h1>
+<p>Hai messo da parte <strong id="saldo"></strong> €</p>
+<button id="aggiungi">Aggiungi 1 €</button>
+<script>
+  let euro = Number(localStorage.getItem("risparmi") || 0);
+  const saldo = document.getElementById("saldo");
+  saldo.textContent = euro;
+  document.getElementById("aggiungi").onclick = () => {
+    euro += 1;
+    localStorage.setItem("risparmi", euro);
+    saldo.textContent = euro;
+  };
+</script>
+</html>
