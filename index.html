@@ -347,7 +347,11 @@
       $("limits").elements.reserve.value = moneyText(state.reserve);
       $("limits").elements.shipping.value = moneyText(state.shipping);
       const sorted = ordered(state.cards);
-      renderPlan(sorted, budget);
+      if (typeof window.aggiornaPropostaZero === "function") {
+  window.aggiornaPropostaZero(sorted, budget);
+} else {
+  renderPlan(sorted, budget);
+}
       renderCards(sorted, budget);
       $("historyTitle").textContent = `Storico acquisti (${state.purchases.length})`;
       $("history").replaceChildren(...state.purchases.slice().reverse().map(p =>
@@ -519,6 +523,10 @@
       else render();
     });
   </script>
-<script src="./cardtrader.js" defer></script>
+  <script src="./cardtrader.js" defer></script>
+  <script src="./proposta-zero.js" defer></script>
+</body>
+</html>
+  
 </body>
 </html>
