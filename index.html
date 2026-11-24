@@ -4,8 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Poké Savings</title>
+
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       max-width: 420px;
       margin: 0 auto;
@@ -13,10 +17,31 @@
       font-family: system-ui, sans-serif;
       color: #252525;
     }
-    h1 { font-size: 28px; }
-    #saldo { display: block; margin: 8px 0 24px; font-size: 44px; }
-    form { margin-top: 28px; }
-    label { display: block; margin-bottom: 8px; }
+
+    h1 {
+      font-size: 28px;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    #saldo {
+      display: block;
+      margin: 8px 0 24px;
+      font-size: 44px;
+    }
+
+    form, section, #backup {
+      margin-top: 28px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+    }
+
     input, button {
       width: 100%;
       min-height: 48px;
@@ -24,7 +49,12 @@
       border-radius: 12px;
       font: inherit;
     }
-    input { border: 1px solid #999; margin-bottom: 10px; }
+
+    input {
+      border: 1px solid #999;
+      margin-bottom: 12px;
+    }
+
     button {
       border: 0;
       background: #bc2436;
@@ -32,87 +62,229 @@
       font-weight: 600;
       cursor: pointer;
     }
+
+    summary {
+      padding: 10px 0;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    progress {
+      width: 100%;
+      accent-color: #bc2436;
+    }
+
+    #errore-carta {
+      color: #a51e30;
+    }
   </style>
 </head>
+
 <body>
   <h1>Il mio salvadanaio Pokémon</h1>
+
   <p>Hai messo da parte <strong id="saldo"></strong></p>
 
   <button id="aggiungi-uno" type="button">Aggiungi 1 €</button>
 
   <form id="versamento">
     <label for="importo">Quanto vuoi aggiungere?</label>
-    <input id="importo" type="text" inputmode="decimal"
-           placeholder="Esempio: 2,50" required>
+    <input
+      id="importo"
+      type="text"
+      inputmode="decimal"
+      placeholder="Esempio: 2,50"
+      required
+    >
     <button type="submit">Aggiungi al saldo</button>
   </form>
+
   <p id="messaggio" role="status"></p>
 
+  <section>
+    <h2>La mia prossima carta</h2>
+    <p id="stato-carta" role="status"></p>
+    <progress id="progresso-carta" aria-label="Obiettivo di risparmio" hidden></progress>
+
+    <details id="modifica-carta">
+      <summary id="titolo-modifica">Scegli una carta</summary>
+
+      <form id="form-carta">
+        <label for="nome-carta">Quale carta vuoi comprare?</label>
+        <input id="nome-carta" type="text" placeholder="Esempio: Umbreon" required>
+
+        <label for="prezzo-carta">Quanto costa?</label>
+        <input
+          id="prezzo-carta"
+          type="text"
+          inputmode="decimal"
+          placeholder="Esempio: 35,00"
+          required
+        >
+
+        <button type="submit">Salva obiettivo</button>
+        <p id="errore-carta" role="alert"></p>
+      </form>
+    </details>
+  </section>
+
+  <details id="backup">
+    <summary>Backup del saldo</summary>
+    <p>Salva una copia del saldo per poterlo recuperare sull’iPhone.</p>
+
+    <button id="salva-backup" type="button">Salva una copia</button>
+
+    <p><label for="file-backup">Ripristina da una copia salvata</label></p>
+    <input id="file-backup" type="file" accept=".json,application/json">
+
+    <p id="esito-backup" role="status"></p>
+  </details>
+
   <script>
-    const saldo = document.getElementById("saldo");
-    const importo = document.getElementById("importo");
-    const messaggio = document.getElementById("messaggio");
+    const elemento = (id) => document.getElementById(id);
+
+    // Sono le stesse chiavi delle versioni precedenti.
+    const chiaveSaldo = "risparmi";
+    const chiaveCarta = "poke-savings-obiettivo";
+
     const valuta = new Intl.NumberFormat("it-IT", {
       style: "currency",
       currency: "EUR"
     });
 
-    function leggiCentesimi() {
-      return Math.round(Number(localStorage.getItem("risparmi") || 0) * 100);
+    function euro(centesimi) {
+      return valuta.format(centesimi / 100);
     }
 
-    function aggiungi(centesimi) {
-      const totale = leggiCentesimi() + centesimi;
-      localStorage.setItem("risparmi", (totale / 100).toFixed(2));
-      saldo.textContent = valuta.format(totale / 100);
-      messaggio.textContent = "Hai aggiunto " + valuta.format(centesimi / 100) + ".";
+    function leggiSaldo() {
+      const salvato = localStorage.getItem(chiaveSaldo);
+      return Math.round(Number(salvato || 0) * 100);
     }
 
-    saldo.textContent = valuta.format(leggiCentesimi() / 100);
+    function leggiImporto(testo) {
+      const valore = testo.trim().replace(",", ".");
 
-    document.getElementById("aggiungi-uno").onclick = () => aggiungi(100);
+      if (!/^\d+(\.\d{1,2})?$/.test(valore)) return null;
 
-    document.getElementById("versamento").onsubmit = (evento) => {
-      evento.preventDefault();
-      const testo = importo.value.trim().replace(",", ".");
-      const centesimi = Math.round(Number(testo) * 100);
+      const centesimi = Math.round(Number(valore) * 100);
+      if (!Number.isSafeInteger(centesimi) || centesimi <= 0) return null;
 
-      if (!/^\d+(\.\d{1,2})?$/.test(testo) ||
-          !Number.isSafeInteger(centesimi) || centesimi <= 0) {
-        messaggio.textContent = "Scrivi un importo positivo, per esempio 2,50.";
-        importo.focus();
+      return centesimi;
+    }
+
+    function leggiCarta() {
+      try {
+        const carta = JSON.parse(localStorage.getItem(chiaveCarta));
+        if (
+          carta &&
+          typeof carta.nome === "string" &&
+          Number.isSafeInteger(carta.centesimi) &&
+          carta.centesimi > 0
+        ) {
+          return carta;
+        }
+      } catch {
+        // Il saldo resta utilizzabile anche se il dato della carta è illeggibile.
+      }
+      return null;
+    }
+
+    function aggiornaSchermata() {
+      const disponibili = leggiSaldo();
+      elemento("saldo").textContent = euro(disponibili);
+
+      const carta = leggiCarta();
+      const barra = elemento("progresso-carta");
+      barra.hidden = !carta;
+
+      if (!carta) {
+        elemento("stato-carta").textContent =
+          "Scegli la carta per cui vuoi risparmiare.";
+        elemento("titolo-modifica").textContent = "Scegli una carta";
         return;
       }
 
-      aggiungi(centesimi);
-      importo.value = "";
+      const mancanti = Math.max(0, carta.centesimi - disponibili);
+      const risultato = mancanti > 0
+        ? `Ti mancano ${euro(mancanti)}.`
+        : "Hai raggiunto il tuo obiettivo!";
+
+      elemento("stato-carta").textContent =
+        `${carta.nome} · ${euro(carta.centesimi)}. ${risultato}`;
+
+      barra.max = carta.centesimi;
+      barra.value = Math.min(disponibili, carta.centesimi);
+      elemento("titolo-modifica").textContent = "Modifica obiettivo";
+
+      if (!elemento("modifica-carta").open) {
+        elemento("nome-carta").value = carta.nome;
+        elemento("prezzo-carta").value =
+          (carta.centesimi / 100).toFixed(2).replace(".", ",");
+      }
+    }
+
+    function salvaSaldo(centesimi) {
+      localStorage.setItem(chiaveSaldo, (centesimi / 100).toFixed(2));
+      aggiornaSchermata();
+    }
+
+    function aggiungiAlSaldo(centesimi) {
+      const totale = leggiSaldo() + centesimi;
+
+      if (!Number.isSafeInteger(totale)) {
+        elemento("messaggio").textContent = "L’importo inserito è troppo alto.";
+        return;
+      }
+
+      salvaSaldo(totale);
+      elemento("messaggio").textContent = `Hai aggiunto ${euro(centesimi)}.`;
+    }
+
+    elemento("aggiungi-uno").onclick = () => aggiungiAlSaldo(100);
+
+    elemento("versamento").onsubmit = (evento) => {
+      evento.preventDefault();
+
+      const campo = elemento("importo");
+      const centesimi = leggiImporto(campo.value);
+
+      if (centesimi === null) {
+        elemento("messaggio").textContent =
+          "Scrivi un importo positivo, per esempio 2,50.";
+        campo.focus();
+        return;
+      }
+
+      aggiungiAlSaldo(centesimi);
+      campo.value = "";
     };
-  </script>
-  <details>
-    <summary>Backup del saldo</summary>
-    <p>Salva una copia del saldo sul tuo iPhone. Potrai recuperarla se il saldo si azzera.</p>
 
-    <button type="button" id="salva-backup">Salva una copia</button>
+    elemento("form-carta").onsubmit = (evento) => {
+      evento.preventDefault();
 
-    <p><label for="file-backup">Ripristina da una copia salvata</label></p>
-    <input type="file" id="file-backup" accept=".json,application/json">
-    <p id="esito-backup" role="status"></p>
-  </details>
+      const nome = elemento("nome-carta").value.trim();
+      const centesimi = leggiImporto(elemento("prezzo-carta").value);
 
-  <script>
-    const esitoBackup = document.getElementById("esito-backup");
-    const fileBackup = document.getElementById("file-backup");
+      if (!nome || centesimi === null) {
+        elemento("errore-carta").textContent =
+          "Inserisci il nome della carta e un prezzo positivo, per esempio 35,00.";
+        return;
+      }
 
-    document.getElementById("salva-backup").onclick = () => {
-      const centesimi = leggiCentesimi();
-      const copia = {
-        app: "poke-savings",
-        versione: 1,
-        centesimi: centesimi
-      };
+      localStorage.setItem(chiaveCarta, JSON.stringify({ nome, centesimi }));
+      elemento("errore-carta").textContent = "";
+      elemento("modifica-carta").open = false;
+      aggiornaSchermata();
+    };
+
+    elemento("salva-backup").onclick = () => {
+      const centesimi = leggiSaldo();
+      const copia = { app: "poke-savings", versione: 1, centesimi };
+
       const file = new Blob([JSON.stringify(copia, null, 2)], {
         type: "application/json"
       });
+
       const indirizzo = URL.createObjectURL(file);
       const link = document.createElement("a");
       const data = new Date().toLocaleDateString("it-IT").replaceAll("/", "-");
@@ -122,189 +294,50 @@
       document.body.appendChild(link);
       link.click();
       link.remove();
+
       setTimeout(() => URL.revokeObjectURL(indirizzo), 60000);
 
-      esitoBackup.textContent =
-        "Copia preparata con un saldo di " + valuta.format(centesimi / 100) +
-        ". Conserva il file per il ripristino.";
+      elemento("esito-backup").textContent =
+        `Copia preparata. Saldo incluso: ${euro(centesimi)}.`;
     };
 
-    fileBackup.onchange = async () => {
-      const file = fileBackup.files[0];
+    elemento("file-backup").onchange = async (evento) => {
+      const campo = evento.target;
+      const file = campo.files[0];
       if (!file) return;
 
       try {
         const copia = JSON.parse(await file.text());
-        if (copia?.app !== "poke-savings" || copia.versione !== 1 ||
-            !Number.isSafeInteger(copia.centesimi) || copia.centesimi < 0) {
+
+        if (
+          copia?.app !== "poke-savings" ||
+          copia.versione !== 1 ||
+          !Number.isSafeInteger(copia.centesimi) ||
+          copia.centesimi < 0
+        ) {
           throw new Error("Copia non valida");
         }
 
-        const attuale = valuta.format(leggiCentesimi() / 100);
-        const recuperato = valuta.format(copia.centesimi / 100);
+        const attuale = euro(leggiSaldo());
+        const recuperato = euro(copia.centesimi);
         const conferma = window.confirm(
           `Vuoi sostituire il saldo attuale di ${attuale} con ${recuperato}?`
         );
 
         if (conferma) {
-          localStorage.setItem("risparmi", (copia.centesimi / 100).toFixed(2));
-          saldo.textContent = recuperato;
-          messaggio.textContent = "";
-          esitoBackup.textContent = "Saldo ripristinato: " + recuperato + ".";
+          salvaSaldo(copia.centesimi);
+          elemento("messaggio").textContent = "";
+          elemento("esito-backup").textContent = `Saldo ripristinato: ${recuperato}.`;
         }
       } catch {
-        esitoBackup.textContent =
-          "Impossibile ripristinare il saldo. Scegli una copia creata da Poké Savings.";
+        elemento("esito-backup").textContent =
+          "Impossibile ripristinare il saldo. Scegli un backup di Poké Savings.";
       } finally {
-        fileBackup.value = "";
+        campo.value = "";
       }
     };
-  </script>  <section id="obiettivo-carta">
-    <h2>La mia prossima carta</h2>
-    <p id="stato-carta" role="status"></p>
-    <progress id="progresso-carta" aria-label="Progresso del risparmio"
-              style="width: 100%; accent-color: #bc2436;" hidden></progress>
 
-    <details id="modifica-carta">
-      <summary id="titolo-modifica">Scegli una carta</summary>
-      <form id="form-carta">
-        <label for="nome-carta">Quale carta vuoi comprare?</label>
-        <input id="nome-carta" placeholder="Esempio: Umbreon" required>
-
-        <label for="prezzo-carta">Quanto costa?</label>
-        <input id="prezzo-carta" type="text" inputmode="decimal"
-               placeholder="Esempio: 35,00" required>
-
-        <button type="submit">Salva obiettivo</button>
-        <p id="errore-carta" role="alert"></p>
-      </form>
-    </details>
-  </section>
-
-  <script>
-    const sezioneCarta = document.getElementById("obiettivo-carta");
-    const statoCarta = document.getElementById("stato-carta");
-    const progressoCarta = document.getElementById("progresso-carta");
-    const modificaCarta = document.getElementById("modifica-carta");
-    const nomeCarta = document.getElementById("nome-carta");
-    const prezzoCarta = document.getElementById("prezzo-carta");
-    const erroreCarta = document.getElementById("errore-carta");
-    const chiaveCarta = "poke-savings-obiettivo";
-
-    // Mostra l'obiettivo subito dopo i pulsanti del saldo, prima del backup.
-    document.getElementById("messaggio").after(sezioneCarta);
-
-    function aggiornaObiettivo() {
-      const carta = JSON.parse(localStorage.getItem(chiaveCarta) || "null");
-      if (!carta) {
-        statoCarta.textContent = "Scegli la carta per cui vuoi risparmiare.";
-        return;
-      }
-
-      const disponibili = leggiCentesimi();
-      const mancanti = Math.max(0, carta.centesimi - disponibili);
-      const prezzo = valuta.format(carta.centesimi / 100);
-      const risultato = mancanti > 0
-        ? "Ti mancano " + valuta.format(mancanti / 100) + "."
-        : "Hai raggiunto il tuo obiettivo!";
-
-      statoCarta.textContent = `${carta.nome} · ${prezzo}. ${risultato}`;
-      progressoCarta.max = carta.centesimi;
-      progressoCarta.value = Math.min(disponibili, carta.centesimi);
-      progressoCarta.hidden = false;
-      document.getElementById("titolo-modifica").textContent = "Modifica obiettivo";
-
-      if (!modificaCarta.open) {
-        nomeCarta.value = carta.nome;
-        prezzoCarta.value = (carta.centesimi / 100).toFixed(2).replace(".", ",");
-      }
-    }
-
-   
-      
-  </script> 
-  <section id="obiettivo-carta">
-    <h2>La mia prossima carta</h2>
-    <p id="stato-carta" role="status"></p>
-    <progress id="progresso-carta" aria-label="Progresso del risparmio"
-              style="width: 100%; accent-color: #bc2436;" hidden></progress>
-
-    <details id="modifica-carta">
-      <summary id="titolo-modifica">Scegli una carta</summary>
-      <form id="form-carta">
-        <label for="nome-carta">Quale carta vuoi comprare?</label>
-        <input id="nome-carta" placeholder="Esempio: Umbreon" required>
-
-        <label for="prezzo-carta">Quanto costa?</label>
-        <input id="prezzo-carta" type="text" inputmode="decimal"
-               placeholder="Esempio: 35,00" required>
-
-        <button type="submit">Salva obiettivo</button>
-        <p id="errore-carta" role="alert"></p>
-      </form>
-    </details>
-  </section>
-
-  <script>
-    const sezioneCarta = document.getElementById("obiettivo-carta");
-    const statoCarta = document.getElementById("stato-carta");
-    const progressoCarta = document.getElementById("progresso-carta");
-    const modificaCarta = document.getElementById("modifica-carta");
-    const nomeCarta = document.getElementById("nome-carta");
-    const prezzoCarta = document.getElementById("prezzo-carta");
-    const erroreCarta = document.getElementById("errore-carta");
-    const chiaveCarta = "poke-savings-obiettivo";
-
-    // Mostra l'obiettivo subito dopo i pulsanti del saldo, prima del backup.
-    document.getElementById("messaggio").after(sezioneCarta);
-
-    function aggiornaObiettivo() {
-      const carta = JSON.parse(localStorage.getItem(chiaveCarta) || "null");
-      if (!carta) {
-        statoCarta.textContent = "Scegli la carta per cui vuoi risparmiare.";
-        return;
-      }
-
-      const disponibili = leggiCentesimi();
-      const mancanti = Math.max(0, carta.centesimi - disponibili);
-      const prezzo = valuta.format(carta.centesimi / 100);
-      const risultato = mancanti > 0
-        ? "Ti mancano " + valuta.format(mancanti / 100) + "."
-        : "Hai raggiunto il tuo obiettivo!";
-
-      statoCarta.textContent = `${carta.nome} · ${prezzo}. ${risultato}`;
-      progressoCarta.max = carta.centesimi;
-      progressoCarta.value = Math.min(disponibili, carta.centesimi);
-      progressoCarta.hidden = false;
-      document.getElementById("titolo-modifica").textContent = "Modifica obiettivo";
-
-      if (!modificaCarta.open) {
-        nomeCarta.value = carta.nome;
-        prezzoCarta.value = (carta.centesimi / 100).toFixed(2).replace(".", ",");
-      }
-    }
-
-    document.getElementById("form-carta").onsubmit = (evento) => {
-      evento.preventDefault();
-      const nome = nomeCarta.value.trim();
-      const testo = prezzoCarta.value.trim().replace(",", ".");
-      const centesimi = Math.round(Number(testo) * 100);
-
-      if (!nome || !/^\d+(\.\d{1,2})?$/.test(testo) ||
-          !Number.isSafeInteger(centesimi) || centesimi <= 0) {
-        erroreCarta.textContent = "Inserisci il nome e un prezzo positivo, per esempio 35,00.";
-        return;
-      }
-
-      localStorage.setItem(chiaveCarta, JSON.stringify({ nome, centesimi }));
-      erroreCarta.textContent = "";
-      modificaCarta.open = false;
-      aggiornaObiettivo();
-    };
-
-    // Aggiorna anche dopo un versamento o un ripristino del saldo.
-    new MutationObserver(aggiornaObiettivo).observe(saldo, { childList: true });
-    aggiornaObiettivo();
+    aggiornaSchermata();
   </script>
 </body>
 </html>
