@@ -98,7 +98,26 @@
             `Foil: ${printable(item.foil)} · Reverse: ${printable(item.reverse)}`));
         }
 
-        article.append(element("small", "Prezzo CardTrader Zero: da rilevare"));
+        const q = item.zero_quote;
+let testoPrezzo = "Prezzo CardTrader Zero: da rilevare";
+
+if (q && Number.isSafeInteger(q.cents) && q.cents > 0) {
+  const prezzo = new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR"
+  }).format(q.cents / 100);
+
+  testoPrezzo = `CardTrader Zero: ${prezzo} · ${language(q.language)}`;
+} else if (q && typeof q.status === "string") {
+  testoPrezzo = q.status;
+}
+
+if (q && q.checked_at && Number.isFinite(Date.parse(q.checked_at))) {
+  const data = new Date(q.checked_at).toLocaleDateString("it-IT");
+  testoPrezzo += ` · Controllato il ${data}`;
+}
+
+article.append(element("small", testoPrezzo));
         details.append(article);
       }
 
