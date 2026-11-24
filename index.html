@@ -223,26 +223,5 @@
    
       
   </script> 
-  document.getElementById("form-carta").onsubmit = (evento) => {
-evento.preventDefault();
-      const nome = nomeCarta.value.trim();
-      const testo = prezzoCarta.value.trim().replace(",", ".");
-      const centesimi = Math.round(Number(testo) * 100);
-
-      if (!nome || !/^\d+(\.\d{1,2})?$/.test(testo) ||
-          !Number.isSafeInteger(centesimi) || centesimi <= 0) {
-        erroreCarta.textContent = "Inserisci il nome e un prezzo positivo, per esempio 35,00.";
-        return;
-      }
-
-      localStorage.setItem(chiaveCarta, JSON.stringify({ nome, centesimi }));
-      erroreCarta.textContent = "";
-      modificaCarta.open = false;
-      aggiornaObiettivo();
-    };
-
-    // Aggiorna anche dopo un versamento o un ripristino del saldo.
-    new MutationObserver(aggiornaObiettivo).observe(saldo, { childList: true });
-    aggiornaObiettivo();
 </body>
 </html>
