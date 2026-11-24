@@ -3,341 +3,521 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#a92336">
   <title>Poké Savings</title>
-
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      max-width: 420px;
-      margin: 0 auto;
-      padding: 32px 20px;
-      font-family: system-ui, sans-serif;
-      color: #252525;
-    }
-
-    h1 {
-      font-size: 28px;
-    }
-
-    h2 {
-      font-size: 22px;
-      margin-bottom: 8px;
-    }
-
-    #saldo {
-      display: block;
-      margin: 8px 0 24px;
-      font-size: 44px;
-    }
-
-    form, section, #backup {
-      margin-top: 28px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-    }
-
-    input, button {
-      width: 100%;
-      min-height: 48px;
-      padding: 12px;
-      border-radius: 12px;
-      font: inherit;
-    }
-
-    input {
-      border: 1px solid #999;
-      margin-bottom: 12px;
-    }
-
-    button {
-      border: 0;
-      background: #bc2436;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    summary {
-      padding: 10px 0;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    progress {
-      width: 100%;
-      accent-color: #bc2436;
-    }
-
-    #errore-carta {
-      color: #a51e30;
-    }
+    * { box-sizing: border-box }
+    :root { font-family: system-ui, sans-serif; color: #24232a; background: #f7f6f3 }
+    body { max-width: 980px; margin: auto; padding: 22px 16px 70px }
+    header, section { background: white; border: 1px solid #dedbd6;
+      border-radius: 18px; padding: clamp(16px, 3vw, 28px); margin-bottom: 16px }
+    header { border-top: 5px solid #a92336 }
+    h1, h2, h3, p { margin: 0 0 12px }
+    h1 { font-size: 30px }
+    h2 { font-size: 22px }
+    h3 { font-size: 17px }
+    p, small { line-height: 1.5 }
+    .totale { font-size: 38px; font-weight: 750; margin: 0 }
+    .muted, small { color: #59575e }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 12px }
+    label { display: grid; gap: 5px; align-content: start; font-size: 14px }
+    input, select, textarea, button { font: inherit; border-radius: 9px;
+      min-height: 44px; padding: 9px 12px; max-width: 100% }
+    input, select, textarea { width: 100%; background: white; color: inherit;
+      border: 1px solid #aaa7a8; font-size: 16px }
+    textarea { min-height: 116px }
+    button { border: 1px solid #a92336; background: #a92336; color: white;
+      cursor: pointer; font-weight: 600 }
+    button.secondary { background: white; color: #822033; border-color: #c7aeb3 }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px }
+    details { margin: 12px 0 }
+    summary { cursor: pointer; font-weight: 650; padding: 8px 0 }
+    article { border-top: 1px solid #e4e1de; padding: 14px 0 }
+    article:last-child { padding-bottom: 0 }
+    article p { margin: 4px 0 }
+    ul { padding-left: 22px }
+    li { margin-bottom: 6px }
+    #notice { position: sticky; top: 4px; z-index: 1; background: #fff4d2;
+      padding: 10px 14px; border-radius: 8px }
+    #notice:empty { display: none }
+    [hidden] { display: none !important }
   </style>
 </head>
-
 <body>
-  <h1>Il mio salvadanaio Pokémon</h1>
+  <h1>Poké Savings</h1>
+  <p id="notice" role="status"></p>
 
-  <p>Hai messo da parte <strong id="saldo"></strong></p>
-
-  <button id="aggiungi-uno" type="button">Aggiungi 1 €</button>
-
-  <form id="versamento">
-    <label for="importo">Quanto vuoi aggiungere?</label>
-    <input
-      id="importo"
-      type="text"
-      inputmode="decimal"
-      placeholder="Esempio: 2,50"
-      required
-    >
-    <button type="submit">Aggiungi al saldo</button>
-  </form>
-
-  <p id="messaggio" role="status"></p>
+  <header>
+    <h2>Il mio salvadanaio</h2>
+    <p class="totale" id="balance"></p>
+    <p id="available"></p>
+    <details>
+      <summary>Aggiungi risparmi</summary>
+      <form id="deposit">
+        <label>Importo in euro
+          <input name="amount" inputmode="decimal" placeholder="2,50" required>
+        </label>
+        <div class="actions">
+          <button>Aggiungi al saldo</button>
+          <button type="button" class="secondary" id="plusOne">Aggiungi 1 €</button>
+        </div>
+      </form>
+    </details>
+    <details>
+      <summary>Riserva e spedizione</summary>
+      <p class="muted">La riserva è la parte del saldo che vuoi conservare.
+        La spedizione si accantona una sola volta per tutto il deposito.</p>
+      <form id="limits">
+        <div class="grid">
+          <label>Riserva da conservare (€)<input name="reserve" inputmode="decimal" required></label>
+          <label>Spedizione prevista (€)<input name="shipping" inputmode="decimal" required></label>
+        </div>
+        <div class="actions"><button>Salva importi</button></div>
+      </form>
+    </details>
+  </header>
 
   <section>
-    <h2>La mia prossima carta</h2>
-    <p id="stato-carta" role="status"></p>
-    <progress id="progresso-carta" aria-label="Obiettivo di risparmio" hidden></progress>
-
-    <details id="modifica-carta">
-      <summary id="titolo-modifica">Scegli una carta</summary>
-
-      <form id="form-carta">
-        <label for="nome-carta">Quale carta vuoi comprare?</label>
-        <input id="nome-carta" type="text" placeholder="Esempio: Umbreon" required>
-
-        <label for="prezzo-carta">Quanto costa?</label>
-        <input
-          id="prezzo-carta"
-          type="text"
-          inputmode="decimal"
-          placeholder="Esempio: 35,00"
-          required
-        >
-
-        <button type="submit">Salva obiettivo</button>
-        <p id="errore-carta" role="alert"></p>
-      </form>
+    <h2>Proposta di acquisto</h2>
+    <p id="planText"></p>
+    <details id="planDetails" hidden>
+      <summary>Vedi le carte proposte</summary>
+      <ul id="plan"></ul>
     </details>
   </section>
 
-  <details id="backup">
-    <summary>Backup del saldo</summary>
-    <p>Salva una copia del saldo per poterlo recuperare sull’iPhone.</p>
+  <section>
+    <h2>La mia wishlist</h2>
+    <details id="editor">
+      <summary id="editorTitle">Aggiungi una carta</summary>
+      <form id="cardForm">
+        <div class="grid">
+          <label>Nome carta<input name="cardName" placeholder="Umbreon" required></label>
+          <label>Versione, set o numero<input name="edition" placeholder="Set, numero, lingua…"></label>
+          <label>Prezzo attuale (€)<input name="price" inputmode="decimal" required></label>
+          <label>Prezzo desiderato (€)<input name="target" inputmode="decimal" placeholder="Facoltativo"></label>
+          <label>Priorità
+            <select name="priority">
+              <option>Alta</option><option selected>Media</option><option>Bassa</option>
+            </select>
+          </label>
+        </div>
+        <div class="actions">
+          <button>Salva carta</button>
+          <button type="button" class="secondary" id="cancel">Annulla</button>
+        </div>
+      </form>
+    </details>
 
-    <button id="salva-backup" type="button">Salva una copia</button>
+    <details>
+      <summary>Importa una tabella di carte</summary>
+      <p>Copia le righe da Excel o Google Fogli, senza intestazioni.
+        Usa queste colonne in ordine: <b>Nome, Versione, Prezzo attuale,
+        Prezzo desiderato, Priorità</b>. Puoi lasciare vuote la versione,
+        il prezzo desiderato e la priorità. Per distinguere due stampe
+        della stessa carta, indica nella versione il set o il numero.</p>
+      <p class="muted">Puoi anche scrivere una carta per riga usando il punto e virgola,
+        per esempio <code>Umbreon;IT 130/197;4,20;3,80;Alta</code>.
+        Stesso nome e stessa versione aggiornano la carta già presente.</p>
+      <form id="importForm">
+        <label>Carte da importare<textarea name="rows" required></textarea></label>
+        <div class="actions"><button>Importa carte</button></div>
+      </form>
+    </details>
 
-    <p><label for="file-backup">Ripristina da una copia salvata</label></p>
-    <input id="file-backup" type="file" accept=".json,application/json">
+    <div class="grid">
+      <label>Cerca nella wishlist<input id="search" type="search" placeholder="Nome, set o numero"></label>
+      <label>Mostra
+        <select id="filter">
+          <option value="all">Tutte le carte</option>
+          <option value="ready">Entro prezzo e budget</option>
+          <option value="wait">Sopra il prezzo desiderato</option>
+          <option value="save">Da finanziare</option>
+          <option value="target">Senza prezzo desiderato</option>
+        </select>
+      </label>
+    </div>
+    <p id="count" class="muted"></p>
+    <div id="cards"></div>
+    <div class="actions"><button class="secondary" id="more" hidden>Mostra altre 30</button></div>
+  </section>
 
-    <p id="esito-backup" role="status"></p>
-  </details>
+  <section>
+    <h2>Acquisti registrati</h2>
+    <p class="muted">Registra qui le carte già comprate su CardTrader.
+      La spedizione viene gestita a parte.</p>
+    <details>
+      <summary id="historyTitle">Storico</summary>
+      <ul id="history"></ul>
+    </details>
+  </section>
+
+  <section>
+    <h2>Backup</h2>
+    <p>Salva su File una copia del salvadanaio e della wishlist.</p>
+    <button id="export">Salva copia completa</button>
+    <details>
+      <summary>Ripristina da un file</summary>
+      <label>Scegli il backup<input id="restore" type="file" accept=".json,application/json"></label>
+    </details>
+  </section>
 
   <script>
-    const elemento = (id) => document.getElementById(id);
+    "use strict";
+    const $ = id => document.getElementById(id);
+    const KEY = "poke-savings-wishlist-v1";
+    const priorities = ["Alta", "Media", "Bassa"];
+    const currency = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
+    const euro = cents => currency.format(cents / 100);
+    const moneyText = cents => (cents / 100).toFixed(2).replace(".", ",");
+    const validMoney = n => Number.isSafeInteger(n) && n >= 0 && n <= 100000000000;
+    const validPriority = p => priorities.includes(p);
+    const norm = s => s.trim().toLocaleLowerCase("it");
+    const same = (a, b) => norm(a.name) === norm(b.name) && norm(a.edition) === norm(b.edition);
+    const id = () => crypto.randomUUID();
+    const now = () => new Date().toISOString();
+    const dateText = d => new Date(d).toLocaleDateString("it-IT");
+    const validDate = d => typeof d === "string" && Number.isFinite(Date.parse(d));
+    const note = s => { $("notice").textContent = s; };
 
-    // Sono le stesse chiavi delle versioni precedenti.
-    const chiaveSaldo = "risparmi";
-    const chiaveCarta = "poke-savings-obiettivo";
+    function amount(text, allowZero = false) {
+      const s = String(text).trim().replace(",", ".");
+      if (!/^\d+(\.\d{1,2})?$/.test(s)) throw Error("Inserisci un importo come 3,50.");
+      const n = Math.round(Number(s) * 100);
+      if (!validMoney(n) || (!allowZero && n === 0)) throw Error("Controlla l’importo inserito.");
+      return n;
+    }
 
-    const valuta = new Intl.NumberFormat("it-IT", {
-      style: "currency",
-      currency: "EUR"
+    function initialState() {
+      const raw = localStorage.getItem("risparmi");
+      const balance = raw === null ? 0 : amount(raw, true);
+      const state = { balance, reserve: 0, shipping: 0, cards: [], purchases: [] };
+      const old = JSON.parse(localStorage.getItem("poke-savings-obiettivo") || "null");
+      if (old && typeof old.nome === "string" && old.nome.trim() &&
+          validMoney(old.centesimi) && old.centesimi > 0) {
+        state.cards.push({
+          id: id(), name: old.nome.trim(), edition: "", price: old.centesimi,
+          target: null, priority: "Alta", previous: null, checked: null
+        });
+      }
+      return state;
+    }
+
+    function validState(s) {
+      if (!s || ![s.balance, s.reserve, s.shipping].every(validMoney) ||
+          !Array.isArray(s.cards) || !Array.isArray(s.purchases)) return false;
+      const ids = new Set();
+      for (const c of s.cards) {
+        if (!c || typeof c.id !== "string" || !c.id || ids.has(c.id) ||
+            typeof c.name !== "string" || !c.name.trim() || typeof c.edition !== "string" ||
+            !validMoney(c.price) || !c.price || !validPriority(c.priority) ||
+            !(c.target === null || (validMoney(c.target) && c.target > 0)) ||
+            !(c.previous === null || (validMoney(c.previous) && c.previous > 0)) ||
+            !(c.checked === null || validDate(c.checked))) return false;
+        ids.add(c.id);
+      }
+      return s.purchases.every(p => p && typeof p.name === "string" &&
+        typeof p.edition === "string" && validMoney(p.paid) && validDate(p.date));
+    }
+
+    function load() {
+      const raw = localStorage.getItem(KEY);
+      const state = raw === null ? initialState() : JSON.parse(raw);
+      if (!validState(state)) throw Error("I dati salvati non sono leggibili.");
+      return state;
+    }
+
+    let state;
+    let editing = null;
+    let limit = 30;
+
+    function available(s) {
+      return Math.max(0, s.balance - s.reserve - s.shipping);
+    }
+
+    function save(next) {
+      if (!validState(next)) throw Error("Controlla i dati prima di salvare.");
+      localStorage.setItem(KEY, JSON.stringify(next));
+      state = next;
+      render();
+    }
+
+    function change(fn) {
+      const next = load();
+      fn(next);
+      save(next);
+    }
+
+    function run(fn) {
+      try { fn(); } catch (e) { note(e.message || "Operazione non riuscita."); }
+    }
+
+    function submit(form, fn) {
+      $(form).onsubmit = event => {
+        event.preventDefault();
+        run(() => fn(event.currentTarget));
+      };
+    }
+
+    function advice(c, budget) {
+      if (c.target !== null && c.price > c.target)
+        return ["wait", `Aspetta: il prezzo supera il tuo obiettivo di ${euro(c.price - c.target)}.`];
+      if (c.price > budget)
+        return ["save", `Da finanziare: mancano ${euro(c.price - budget)} del budget spendibile.`];
+      if (c.target === null)
+        return ["target", "Rientra nel budget. Imposta un prezzo desiderato per ricevere il consiglio."];
+      return ["ready", "Entro il tuo prezzo desiderato e il budget disponibile."];
+    }
+
+    function ordered(cards) {
+      return [...cards].sort((a, b) =>
+        priorities.indexOf(a.priority) - priorities.indexOf(b.priority) ||
+        a.price - b.price || a.name.localeCompare(b.name, "it"));
+    }
+
+    function textNode(tag, text) {
+      const node = document.createElement(tag);
+      node.textContent = text;
+      return node;
+    }
+
+    function title(c) {
+      return c.edition ? `${c.name} · ${c.edition}` : c.name;
+    }
+
+    function button(text, handler) {
+      const b = textNode("button", text);
+      b.className = "secondary";
+      b.onclick = () => run(handler);
+      return b;
+    }
+
+    function renderPlan(sorted, budget) {
+      let left = budget;
+      const list = $("plan");
+      list.replaceChildren();
+      for (const c of sorted) {
+        if (advice(c, left)[0] !== "ready" || !c.checked) continue;
+        left -= c.price;
+        list.append(textNode("li", `${title(c)} · ${euro(c.price)}`));
+      }
+      const count = list.children.length;
+      $("planDetails").hidden = !count;
+      $("planText").textContent = count
+        ? `${count} in proposta · Totale ${euro(budget - left)} · Budget residuo ${euro(left)}. Verifica le offerte su CardTrader prima di comprare.`
+        : "La proposta includerà le carte con prezzo registrato entro il tuo obiettivo e il budget disponibile.";
+    }
+
+    function renderCards(sorted, budget) {
+      const query = norm($("search").value);
+      const filter = $("filter").value;
+      const matches = sorted.filter(c =>
+        norm(title(c)).includes(query) && (filter === "all" || advice(c, budget)[0] === filter));
+      $("count").textContent = `${matches.length} in elenco · ${state.cards.length} in wishlist`;
+      const box = $("cards");
+      box.replaceChildren();
+      for (const c of matches.slice(0, limit)) {
+        const article = document.createElement("article");
+        article.append(textNode("h3", title(c)));
+        article.append(textNode("p", `${euro(c.price)} · Priorità ${c.priority}` +
+          (c.target === null ? "" : ` · Obiettivo ${euro(c.target)}`)));
+        article.append(textNode("p", advice(c, budget)[1]));
+        let observation = c.checked
+          ? `Prezzo registrato il ${dateText(c.checked)}.`
+          : "Prezzo recuperato dal vecchio obiettivo. Verificalo su CardTrader.";
+        if (c.previous !== null) {
+          const diff = c.price - c.previous;
+          observation += diff === 0 ? " Invariato dall’ultima rilevazione."
+            : ` ${diff < 0 ? "Sceso" : "Salito"} di ${euro(Math.abs(diff))} dall’ultima rilevazione.`;
+        }
+        article.append(textNode("small", observation));
+        const actions = document.createElement("div");
+        actions.className = "actions";
+        actions.append(button("Modifica", () => edit(c)), button("Registra acquisto", () => buy(c.id)));
+        article.append(actions);
+        box.append(article);
+      }
+      $("more").hidden = matches.length <= limit;
+    }
+
+    function render() {
+      const budget = available(state);
+      $("balance").textContent = euro(state.balance);
+      $("available").textContent = `Disponibili per le carte: ${euro(budget)}.`;
+      $("limits").elements.reserve.value = moneyText(state.reserve);
+      $("limits").elements.shipping.value = moneyText(state.shipping);
+      const sorted = ordered(state.cards);
+      renderPlan(sorted, budget);
+      renderCards(sorted, budget);
+      $("historyTitle").textContent = `Storico acquisti (${state.purchases.length})`;
+      $("history").replaceChildren(...state.purchases.slice().reverse().map(p =>
+        textNode("li", `${dateText(p.date)} · ${title(p)} · ${euro(p.paid)}`)));
+    }
+
+    function clearEditor() {
+      editing = null;
+      $("cardForm").reset();
+      $("editorTitle").textContent = "Aggiungi una carta";
+      $("editor").open = false;
+    }
+
+    function edit(c) {
+      editing = c.id;
+      const f = $("cardForm").elements;
+      f.cardName.value = c.name;
+      f.edition.value = c.edition;
+      f.price.value = moneyText(c.price);
+      f.target.value = c.target === null ? "" : moneyText(c.target);
+      f.priority.value = c.priority;
+      $("editorTitle").textContent = "Modifica carta";
+      $("editor").open = true;
+      $("editor").scrollIntoView({ block: "start" });
+      f.cardName.focus();
+    }
+
+    function cardData(name, edition, price, target, priority) {
+      name = name.trim();
+      if (!name) throw Error("Inserisci il nome della carta.");
+      if (!validPriority(priority)) throw Error("Usa la priorità Alta, Media o Bassa.");
+      return { name, edition: edition.trim(), price: amount(price),
+        target: target.trim() ? amount(target) : null, priority };
+    }
+
+    function upsert(s, data, editingId = null) {
+      const duplicate = s.cards.find(c => same(c, data));
+      if (editingId && duplicate && duplicate.id !== editingId)
+        throw Error("Questa carta e versione sono già in wishlist.");
+      const old = editingId ? s.cards.find(c => c.id === editingId) : duplicate;
+      if (editingId && !old) throw Error("La carta non è più in wishlist.");
+      if (old) {
+        Object.assign(old, data, { previous: old.checked ? old.price : null, checked: now() });
+      } else {
+        s.cards.push({ ...data, id: id(), previous: null, checked: now() });
+      }
+    }
+
+    function deposit(n) {
+      change(s => { s.balance += n; });
+      note(`Hai aggiunto ${euro(n)}.`);
+    }
+
+    function buy(cardId) {
+      const c = load().cards.find(item => item.id === cardId);
+      if (!c) throw Error("La carta non è più in wishlist.");
+      const raw = prompt(`Prezzo effettivamente pagato per ${title(c)} (€)`, moneyText(c.price));
+      if (raw === null) return;
+      const paid = amount(raw);
+      if (paid > available(load())) throw Error("Il prezzo supera il budget spendibile. Controlla saldo e riserva.");
+      if (!confirm(`Registrare ${title(c)} per ${euro(paid)}? L’importo sarà scalato dal saldo.`)) return;
+      change(s => {
+        const index = s.cards.findIndex(item => item.id === cardId);
+        if (index < 0 || paid > available(s)) throw Error("Ricontrolla carta e budget.");
+        const [item] = s.cards.splice(index, 1);
+        s.balance -= paid;
+        s.purchases.push({ name: item.name, edition: item.edition, paid, date: now() });
+      });
+      if (editing === cardId) clearEditor();
+      note("Acquisto registrato.");
+    }
+
+    submit("deposit", f => {
+      deposit(amount(f.elements.amount.value));
+      f.reset();
+    });
+    $("plusOne").onclick = () => run(() => deposit(100));
+
+    submit("limits", f => {
+      const reserve = amount(f.elements.reserve.value, true);
+      const shipping = amount(f.elements.shipping.value, true);
+      change(s => { s.reserve = reserve; s.shipping = shipping; });
+      note("Riserva e spedizione salvate.");
     });
 
-    function euro(centesimi) {
-      return valuta.format(centesimi / 100);
-    }
+    submit("cardForm", f => {
+      const v = f.elements;
+      const data = cardData(v.cardName.value, v.edition.value, v.price.value,
+        v.target.value, v.priority.value);
+      change(s => upsert(s, data, editing));
+      clearEditor();
+      note("Carta salvata.");
+    });
+    $("cancel").onclick = clearEditor;
 
-    function leggiSaldo() {
-      const salvato = localStorage.getItem(chiaveSaldo);
-      return Math.round(Number(salvato || 0) * 100);
-    }
-
-    function leggiImporto(testo) {
-      const valore = testo.trim().replace(",", ".");
-
-      if (!/^\d+(\.\d{1,2})?$/.test(valore)) return null;
-
-      const centesimi = Math.round(Number(valore) * 100);
-      if (!Number.isSafeInteger(centesimi) || centesimi <= 0) return null;
-
-      return centesimi;
-    }
-
-    function leggiCarta() {
-      try {
-        const carta = JSON.parse(localStorage.getItem(chiaveCarta));
-        if (
-          carta &&
-          typeof carta.nome === "string" &&
-          Number.isSafeInteger(carta.centesimi) &&
-          carta.centesimi > 0
-        ) {
-          return carta;
-        }
-      } catch {
-        // Il saldo resta utilizzabile anche se il dato della carta è illeggibile.
-      }
-      return null;
-    }
-
-    function aggiornaSchermata() {
-      const disponibili = leggiSaldo();
-      elemento("saldo").textContent = euro(disponibili);
-
-      const carta = leggiCarta();
-      const barra = elemento("progresso-carta");
-      barra.hidden = !carta;
-
-      if (!carta) {
-        elemento("stato-carta").textContent =
-          "Scegli la carta per cui vuoi risparmiare.";
-        elemento("titolo-modifica").textContent = "Scegli una carta";
-        return;
-      }
-
-      const mancanti = Math.max(0, carta.centesimi - disponibili);
-      const risultato = mancanti > 0
-        ? `Ti mancano ${euro(mancanti)}.`
-        : "Hai raggiunto il tuo obiettivo!";
-
-      elemento("stato-carta").textContent =
-        `${carta.nome} · ${euro(carta.centesimi)}. ${risultato}`;
-
-      barra.max = carta.centesimi;
-      barra.value = Math.min(disponibili, carta.centesimi);
-      elemento("titolo-modifica").textContent = "Modifica obiettivo";
-
-      if (!elemento("modifica-carta").open) {
-        elemento("nome-carta").value = carta.nome;
-        elemento("prezzo-carta").value =
-          (carta.centesimi / 100).toFixed(2).replace(".", ",");
-      }
-    }
-
-    function salvaSaldo(centesimi) {
-      localStorage.setItem(chiaveSaldo, (centesimi / 100).toFixed(2));
-      aggiornaSchermata();
-    }
-
-    function aggiungiAlSaldo(centesimi) {
-      const totale = leggiSaldo() + centesimi;
-
-      if (!Number.isSafeInteger(totale)) {
-        elemento("messaggio").textContent = "L’importo inserito è troppo alto.";
-        return;
-      }
-
-      salvaSaldo(totale);
-      elemento("messaggio").textContent = `Hai aggiunto ${euro(centesimi)}.`;
-    }
-
-    elemento("aggiungi-uno").onclick = () => aggiungiAlSaldo(100);
-
-    elemento("versamento").onsubmit = (evento) => {
-      evento.preventDefault();
-
-      const campo = elemento("importo");
-      const centesimi = leggiImporto(campo.value);
-
-      if (centesimi === null) {
-        elemento("messaggio").textContent =
-          "Scrivi un importo positivo, per esempio 2,50.";
-        campo.focus();
-        return;
-      }
-
-      aggiungiAlSaldo(centesimi);
-      campo.value = "";
-    };
-
-    elemento("form-carta").onsubmit = (evento) => {
-      evento.preventDefault();
-
-      const nome = elemento("nome-carta").value.trim();
-      const centesimi = leggiImporto(elemento("prezzo-carta").value);
-
-      if (!nome || centesimi === null) {
-        elemento("errore-carta").textContent =
-          "Inserisci il nome della carta e un prezzo positivo, per esempio 35,00.";
-        return;
-      }
-
-      localStorage.setItem(chiaveCarta, JSON.stringify({ nome, centesimi }));
-      elemento("errore-carta").textContent = "";
-      elemento("modifica-carta").open = false;
-      aggiornaSchermata();
-    };
-
-    elemento("salva-backup").onclick = () => {
-      const centesimi = leggiSaldo();
-      const copia = { app: "poke-savings", versione: 1, centesimi };
-
-      const file = new Blob([JSON.stringify(copia, null, 2)], {
-        type: "application/json"
+    submit("importForm", f => {
+      const lines = f.elements.rows.value.split(/\r?\n/);
+      const batch = [];
+      lines.forEach((line, i) => {
+        if (!line.trim()) return;
+        const cols = line.split(line.includes("\t") ? "\t" : ";");
+        try {
+          if (cols.length < 3 || cols.length > 5) throw Error("Sono richieste da 3 a 5 colonne.");
+          const [name, edition, price, target = "", p = ""] = cols;
+          const priority = p.trim() ? priorities.find(x => norm(x) === norm(p)) : "Media";
+          batch.push({ data: cardData(name, edition, price, target, priority),
+            hasTarget: !!target.trim(), hasPriority: !!p.trim() });
+        } catch (e) { throw Error(`Riga ${i + 1}: ${e.message}`); }
       });
+      if (!batch.length) throw Error("Incolla almeno una carta.");
+      change(s => {
+        for (const row of batch) {
+          const old = s.cards.find(c => same(c, row.data));
+          if (old && !row.hasTarget) row.data.target = old.target;
+          if (old && !row.hasPriority) row.data.priority = old.priority;
+          upsert(s, row.data);
+        }
+      });
+      f.reset();
+      note(`Importazione completata: ${batch.length} righe elaborate.`);
+    });
 
-      const indirizzo = URL.createObjectURL(file);
-      const link = document.createElement("a");
-      const data = new Date().toLocaleDateString("it-IT").replaceAll("/", "-");
+    function refreshList() { limit = 30; render(); }
+    $("search").oninput = refreshList;
+    $("filter").onchange = refreshList;
+    $("more").onclick = () => { limit += 30; render(); };
 
-      link.href = indirizzo;
-      link.download = `poke-savings-${data}.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+    $("export").onclick = () => run(() => {
+      const backup = { app: "poke-savings", versione: 2, dati: load() };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `poke-savings-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    });
 
-      setTimeout(() => URL.revokeObjectURL(indirizzo), 60000);
-
-      elemento("esito-backup").textContent =
-        `Copia preparata. Saldo incluso: ${euro(centesimi)}.`;
-    };
-
-    elemento("file-backup").onchange = async (evento) => {
-      const campo = evento.target;
-      const file = campo.files[0];
+    $("restore").onchange = async event => {
+      const input = event.target;
+      const file = input.files[0];
       if (!file) return;
-
       try {
-        const copia = JSON.parse(await file.text());
-
-        if (
-          copia?.app !== "poke-savings" ||
-          copia.versione !== 1 ||
-          !Number.isSafeInteger(copia.centesimi) ||
-          copia.centesimi < 0
-        ) {
-          throw new Error("Copia non valida");
-        }
-
-        const attuale = euro(leggiSaldo());
-        const recuperato = euro(copia.centesimi);
-        const conferma = window.confirm(
-          `Vuoi sostituire il saldo attuale di ${attuale} con ${recuperato}?`
-        );
-
-        if (conferma) {
-          salvaSaldo(copia.centesimi);
-          elemento("messaggio").textContent = "";
-          elemento("esito-backup").textContent = `Saldo ripristinato: ${recuperato}.`;
-        }
-      } catch {
-        elemento("esito-backup").textContent =
-          "Impossibile ripristinare il saldo. Scegli un backup di Poké Savings.";
-      } finally {
-        campo.value = "";
-      }
+        const backup = JSON.parse(await file.text());
+        if (backup?.app !== "poke-savings") throw Error("File di backup non riconosciuto.");
+        if (backup.versione === 1 && validMoney(backup.centesimi)) {
+          if (confirm(`Ripristinare soltanto il saldo di ${euro(backup.centesimi)}?`))
+            change(s => { s.balance = backup.centesimi; });
+        } else if (backup.versione === 2 && validState(backup.dati)) {
+          if (confirm(`Sostituire i dati con questa copia? Contiene ${backup.dati.cards.length} carte in wishlist e un saldo di ${euro(backup.dati.balance)}.`)) {
+            clearEditor();
+            save(backup.dati);
+            note("Backup completo ripristinato.");
+          }
+        } else throw Error("Il contenuto del backup non è valido.");
+      } catch (e) { note(e.message); }
+      finally { input.value = ""; }
     };
 
-    aggiornaSchermata();
+    window.addEventListener("storage", e => {
+      if (e.key === KEY) run(() => { state = load(); render(); });
+    });
+
+    run(() => {
+      state = load();
+      if (localStorage.getItem(KEY) === null) save(state);
+      else render();
+    });
   </script>
 </body>
 </html>
