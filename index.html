@@ -1,19 +1,92 @@
 <!doctype html>
 <html lang="it">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Poké Savings</title>
-<h1>Il mio salvadanaio Pokémon</h1>
-<p>Hai messo da parte <strong id="saldo"></strong> €</p>
-<button id="aggiungi">Aggiungi 1 €</button>
-<script>
-  let euro = Number(localStorage.getItem("risparmi") || 0);
-  const saldo = document.getElementById("saldo");
-  saldo.textContent = euro;
-  document.getElementById("aggiungi").onclick = () => {
-    euro += 1;
-    localStorage.setItem("risparmi", euro);
-    saldo.textContent = euro;
-  };
-</script>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Poké Savings</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 32px 20px;
+      font-family: system-ui, sans-serif;
+      color: #252525;
+    }
+    h1 { font-size: 28px; }
+    #saldo { display: block; margin: 8px 0 24px; font-size: 44px; }
+    form { margin-top: 28px; }
+    label { display: block; margin-bottom: 8px; }
+    input, button {
+      width: 100%;
+      min-height: 48px;
+      padding: 12px;
+      border-radius: 12px;
+      font: inherit;
+    }
+    input { border: 1px solid #999; margin-bottom: 10px; }
+    button {
+      border: 0;
+      background: #bc2436;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Il mio salvadanaio Pokémon</h1>
+  <p>Hai messo da parte <strong id="saldo"></strong></p>
+
+  <button id="aggiungi-uno" type="button">Aggiungi 1 €</button>
+
+  <form id="versamento">
+    <label for="importo">Quanto vuoi aggiungere?</label>
+    <input id="importo" type="text" inputmode="decimal"
+           placeholder="Esempio: 2,50" required>
+    <button type="submit">Aggiungi al saldo</button>
+  </form>
+  <p id="messaggio" role="status"></p>
+
+  <script>
+    const saldo = document.getElementById("saldo");
+    const importo = document.getElementById("importo");
+    const messaggio = document.getElementById("messaggio");
+    const valuta = new Intl.NumberFormat("it-IT", {
+      style: "currency",
+      currency: "EUR"
+    });
+
+    function leggiCentesimi() {
+      return Math.round(Number(localStorage.getItem("risparmi") || 0) * 100);
+    }
+
+    function aggiungi(centesimi) {
+      const totale = leggiCentesimi() + centesimi;
+      localStorage.setItem("risparmi", (totale / 100).toFixed(2));
+      saldo.textContent = valuta.format(totale / 100);
+      messaggio.textContent = "Hai aggiunto " + valuta.format(centesimi / 100) + ".";
+    }
+
+    saldo.textContent = valuta.format(leggiCentesimi() / 100);
+
+    document.getElementById("aggiungi-uno").onclick = () => aggiungi(100);
+
+    document.getElementById("versamento").onsubmit = (evento) => {
+      evento.preventDefault();
+      const testo = importo.value.trim().replace(",", ".");
+      const centesimi = Math.round(Number(testo) * 100);
+
+      if (!/^\d+(\.\d{1,2})?$/.test(testo) ||
+          !Number.isSafeInteger(centesimi) || centesimi <= 0) {
+        messaggio.textContent = "Scrivi un importo positivo, per esempio 2,50.";
+        importo.focus();
+        return;
+      }
+
+      aggiungi(centesimi);
+      importo.value = "";
+    };
+  </script>
+</body>
 </html>
