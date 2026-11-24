@@ -223,5 +223,88 @@
    
       
   </script> 
+  <section id="obiettivo-carta">
+    <h2>La mia prossima carta</h2>
+    <p id="stato-carta" role="status"></p>
+    <progress id="progresso-carta" aria-label="Progresso del risparmio"
+              style="width: 100%; accent-color: #bc2436;" hidden></progress>
+
+    <details id="modifica-carta">
+      <summary id="titolo-modifica">Scegli una carta</summary>
+      <form id="form-carta">
+        <label for="nome-carta">Quale carta vuoi comprare?</label>
+        <input id="nome-carta" placeholder="Esempio: Umbreon" required>
+
+        <label for="prezzo-carta">Quanto costa?</label>
+        <input id="prezzo-carta" type="text" inputmode="decimal"
+               placeholder="Esempio: 35,00" required>
+
+        <button type="submit">Salva obiettivo</button>
+        <p id="errore-carta" role="alert"></p>
+      </form>
+    </details>
+  </section>
+
+  <script>
+    const sezioneCarta = document.getElementById("obiettivo-carta");
+    const statoCarta = document.getElementById("stato-carta");
+    const progressoCarta = document.getElementById("progresso-carta");
+    const modificaCarta = document.getElementById("modifica-carta");
+    const nomeCarta = document.getElementById("nome-carta");
+    const prezzoCarta = document.getElementById("prezzo-carta");
+    const erroreCarta = document.getElementById("errore-carta");
+    const chiaveCarta = "poke-savings-obiettivo";
+
+    // Mostra l'obiettivo subito dopo i pulsanti del saldo, prima del backup.
+    document.getElementById("messaggio").after(sezioneCarta);
+
+    function aggiornaObiettivo() {
+      const carta = JSON.parse(localStorage.getItem(chiaveCarta) || "null");
+      if (!carta) {
+        statoCarta.textContent = "Scegli la carta per cui vuoi risparmiare.";
+        return;
+      }
+
+      const disponibili = leggiCentesimi();
+      const mancanti = Math.max(0, carta.centesimi - disponibili);
+      const prezzo = valuta.format(carta.centesimi / 100);
+      const risultato = mancanti > 0
+        ? "Ti mancano " + valuta.format(mancanti / 100) + "."
+        : "Hai raggiunto il tuo obiettivo!";
+
+      statoCarta.textContent = `${carta.nome} · ${prezzo}. ${risultato}`;
+      progressoCarta.max = carta.centesimi;
+      progressoCarta.value = Math.min(disponibili, carta.centesimi);
+      progressoCarta.hidden = false;
+      document.getElementById("titolo-modifica").textContent = "Modifica obiettivo";
+
+      if (!modificaCarta.open) {
+        nomeCarta.value = carta.nome;
+        prezzoCarta.value = (carta.centesimi / 100).toFixed(2).replace(".", ",");
+      }
+    }
+
+    document.getElementById("form-carta").onsubmit = (evento) => {
+      evento.preventDefault();
+      const nome = nomeCarta.value.trim();
+      const testo = prezzoCarta.value.trim().replace(",", ".");
+      const centesimi = Math.round(Number(testo) * 100);
+
+      if (!nome || !/^\d+(\.\d{1,2})?$/.test(testo) ||
+          !Number.isSafeInteger(centesimi) || centesimi <= 0) {
+        erroreCarta.textContent = "Inserisci il nome e un prezzo positivo, per esempio 35,00.";
+        return;
+      }
+
+      localStorage.setItem(chiaveCarta, JSON.stringify({ nome, centesimi }));
+      erroreCarta.textContent = "";
+      modificaCarta.open = false;
+      aggiornaObiettivo();
+    };
+
+    // Aggiorna anche dopo un versamento o un ripristino del saldo.
+    new MutationObserver(aggiornaObiettivo).observe(saldo, { childList: true });
+    aggiornaObiettivo();
+  </script>
 </body>
 </html>
