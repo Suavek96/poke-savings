@@ -88,5 +88,77 @@
       importo.value = "";
     };
   </script>
+  <details>
+    <summary>Backup del saldo</summary>
+    <p>Salva una copia del saldo sul tuo iPhone. Potrai recuperarla se il saldo si azzera.</p>
+
+    <button type="button" id="salva-backup">Salva una copia</button>
+
+    <p><label for="file-backup">Ripristina da una copia salvata</label></p>
+    <input type="file" id="file-backup" accept=".json,application/json">
+    <p id="esito-backup" role="status"></p>
+  </details>
+
+  <script>
+    const esitoBackup = document.getElementById("esito-backup");
+    const fileBackup = document.getElementById("file-backup");
+
+    document.getElementById("salva-backup").onclick = () => {
+      const centesimi = leggiCentesimi();
+      const copia = {
+        app: "poke-savings",
+        versione: 1,
+        centesimi: centesimi
+      };
+      const file = new Blob([JSON.stringify(copia, null, 2)], {
+        type: "application/json"
+      });
+      const indirizzo = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      const data = new Date().toLocaleDateString("it-IT").replaceAll("/", "-");
+
+      link.href = indirizzo;
+      link.download = `poke-savings-${data}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(indirizzo), 60000);
+
+      esitoBackup.textContent =
+        "Copia preparata con un saldo di " + valuta.format(centesimi / 100) +
+        ". Conserva il file per il ripristino.";
+    };
+
+    fileBackup.onchange = async () => {
+      const file = fileBackup.files[0];
+      if (!file) return;
+
+      try {
+        const copia = JSON.parse(await file.text());
+        if (copia?.app !== "poke-savings" || copia.versione !== 1 ||
+            !Number.isSafeInteger(copia.centesimi) || copia.centesimi < 0) {
+          throw new Error("Copia non valida");
+        }
+
+        const attuale = valuta.format(leggiCentesimi() / 100);
+        const recuperato = valuta.format(copia.centesimi / 100);
+        const conferma = window.confirm(
+          `Vuoi sostituire il saldo attuale di ${attuale} con ${recuperato}?`
+        );
+
+        if (conferma) {
+          localStorage.setItem("risparmi", (copia.centesimi / 100).toFixed(2));
+          saldo.textContent = recuperato;
+          messaggio.textContent = "";
+          esitoBackup.textContent = "Saldo ripristinato: " + recuperato + ".";
+        }
+      } catch {
+        esitoBackup.textContent =
+          "Impossibile ripristinare il saldo. Scegli una copia creata da Poké Savings.";
+      } finally {
+        fileBackup.value = "";
+      }
+    };
+  </script>
 </body>
 </html>
